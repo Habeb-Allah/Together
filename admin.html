@@ -121,6 +121,16 @@
   </style>
 </head>
 <body>
+  <div class="lock-screen" id="lockScreen">
+  <div class="lock-box">
+    <h3>🔐 حماية لوحة التبرعات</h3>
+    <p style="font-size: 13px; color:#94a3b8;">يرجى إدخال كلمة المرور</p>
+    <input type="password" id="passInput" placeholder="•••••••">
+    <button onclick="checkPass()">دخول</button>
+    <div class="lock-error" id="lockError"></div>
+  </div>
+</div>
+
   <div class="page">
     <h1>إدخال تبرع جديد</h1>
     <p>هذه الصفحة مخصّصة لفريق الجمعية.</p>
