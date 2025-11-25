@@ -228,5 +228,29 @@
       submitBtn.disabled = false;
     });
   </script>
+  <script>
+  // ضع كلمة المرور هنا
+  const ADMIN_PASSWORD = "123456"; // 🔒 غيّرها الآن
+
+  function checkPass() {
+    const input = document.getElementById("passInput").value.trim();
+    const error = document.getElementById("lockError");
+
+    if (input === ADMIN_PASSWORD) {
+      document.getElementById("lockScreen").style.display = "none";
+      localStorage.setItem("donate_admin_auth", "yes"); // تخزين الجلسة
+    } else {
+      error.textContent = "❌ كلمة المرور غير صحيحة";
+    }
+  }
+
+  // في حال كان المستخدم أدخل كلمة المرور سابقاً
+  window.onload = () => {
+    if (localStorage.getItem("donate_admin_auth") === "yes") {
+      document.getElementById("lockScreen").style.display = "none";
+    }
+  }
+</script>
+
 </body>
 </html>
