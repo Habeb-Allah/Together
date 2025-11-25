@@ -259,7 +259,15 @@
       measurementId: "G-VKM59LEWK7"
     };
 
-    const GOAL_AMOUNT = 2000000;
+    let GOAL_AMOUNT = 2000000; // قيمة افتراضية
+
+    const settingsRef = doc(db, "donations", "settings");
+    onSnapshot(settingsRef, (snap) => {
+      if (snap.exists()) {
+        GOAL_AMOUNT = snap.data().goal || GOAL_AMOUNT;
+      }
+    });
+
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
