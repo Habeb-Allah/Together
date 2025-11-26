@@ -236,110 +236,128 @@
       منصة تبرعات لجمعية "معاً لتحقيق الأهداف".
     </footer>
   </div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+  import {
+    getFirestore,
+    doc,
+    onSnapshot,
+    collection,
+    query,
+    orderBy,
+    limit
+  } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-    import {
-      getFirestore,
-      doc,
-      onSnapshot,
-      collection,
-      query,
-      orderBy,
-      limit
-    } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyA2FLWsDegWYdHLjm89pNyoNvnRkTvxdMA",
+    authDomain: "together-b.firebaseapp.com",
+    projectId: "together-b",
+    storageBucket: "together-b.appspot.com",
+    messagingSenderId: "106482180658",
+    appId: "1:106482180658:web:3685f9ed68a67ca1e4922b",
+    measurementId: "G-VKM59LEWK7"
+  };
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyA2FLWsDegWYdHLjm89pNyoNvnRkTvxdMA",
-      authDomain: "together-b.firebaseapp.com",
-      projectId: "together-b",
-      storageBucket: "together-b.appspot.com",
-      messagingSenderId: "106482180658",
-      appId: "1:106482180658:web:3685f9ed68a67ca1e4922b",
-      measurementId: "G-VKM59LEWK7"
-    };
+  // 1️⃣ التهيئة يجب أن تكون أول شيء
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    let GOAL_AMOUNT = 2000000; // قيمة افتراضية
+  // 2️⃣ المتغيرات
+  let GOAL_AMOUNT = 2000000;
 
-    const settingsRef = doc(db, "donations", "settings");
-    onSnapshot(settingsRef, (snap) => {
-      if (snap.exists()) {
-        GOAL_AMOUNT = snap.data().goal || GOAL_AMOUNT;
-      }
+  const totalEl = document.getElementById("total");
+  const progressBar = document.getElementById("progressBar");
+  const percentLabel = document.getElementById("percentLabel");
+  const percentText = document.getElementById("percentText");
+  const remainingText = document.getElementById("remainingText");
+  const donationsList = document.getElementById("donationsList");
+  const donationsCountEl = document.getElementById("donationsCount");
+  const chipText = document.getElementById("chipText");
+
+  const formatAmount = (value) => {
+    try {
+      return Number(value).toLocaleString("ar-EG");
+    } catch {
+      return value;
+    }
+  };
+
+  // 3️⃣ قراءة الهدف من Firebase (REAL-TIME)
+  const settingsRef = doc(db, "donations", "settings");
+  onSnapshot(settingsRef, (snap) => {
+    if (snap.exists()) {
+      GOAL_AMOUNT = snap.data().goal || 0;
+      document.querySelector(".goal strong").textContent =
+        formatAmount(GOAL_AMOUNT) + " ج.س";
+    }
+  });
+
+  // 4️⃣ قراءة إجمالي التبرعات (REAL-TIME)
+  onSnapshot(doc(db, "donations", "total"), (docSnap) => {
+    if (!docSnap.exists()) return;
+
+    const total = docSnap.data().amount || 0;
+    totalEl.textContent = formatAmount(total) + " ج.س";
+
+    const percent = Math.min((total / GOAL_AMOUNT) * 100, 100);
+    const percentRounded = Math.floor(percent);
+
+    progressBar.style.width = percent + "%";
+    percentLabel.textContent = percentRounded + "%";
+    percentText.textContent = "تم تحقيق " + percentRounded + "% من الهدف.";
+
+    remainingText.textContent =
+      formatAmount(Math.max(GOAL_AMOUNT - total, 0)) + " ج.س";
+
+    if (percentRounded >= 100) chipText.textContent = "تم تحقيق الهدف 🎉";
+    else if (percentRounded >= 50) chipText.textContent = "تبقّى القليل 💚";
+    else chipText.textContent = "جاري جمع التبرعات 💚";
+  });
+
+  // 5️⃣ تحميل آخر 20 تبرع (REAL-TIME)
+  const q = query(
+    collection(db, "donations_list"),
+    orderBy("time", "desc"),
+    limit(20)
+  );
+
+  onSnapshot(q, (snapshot) => {
+    donationsList.innerHTML = "";
+    let count = 0;
+
+    snapshot.forEach((doc) => {
+      const d = doc.data();
+      count++;
+
+      const name = d.name || "متبرّع";
+      const amount = d.amount || 0;
+      const time = d.time?.toDate()?.toLocaleString("ar-EG") || "";
+
+      donationsList.innerHTML += `
+        <li>
+          <div>
+            <div class="donor-name">${name}</div>
+            <div class="donor-meta">${time}</div>
+          </div>
+          <div class="amount-chip">${formatAmount(amount)} ج.س</div>
+        </li>`;
     });
 
+    donationsCountEl.textContent = count;
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const totalEl = document.getElementById("total");
-    const progressBar = document.getElementById("progressBar");
-    const percentLabel = document.getElementById("percentLabel");
-    const percentText = document.getElementById("percentText");
-    const remainingText = document.getElementById("remainingText");
-    const donationsList = document.getElementById("donationsList");
-    const donationsCountEl = document.getElementById("donationsCount");
-    const chipText = document.getElementById("chipText");
-
-    const formatAmount = (value) => {
-      try {
-        return Number(value).toLocaleString("ar-EG");
-      } catch {
-        return value;
-      }
-    };
-
-    onSnapshot(doc(db, "donations", "total"), (docSnap) => {
-      if (!docSnap.exists()) return;
-
-      const total = docSnap.data().amount || 0;
-      totalEl.textContent = formatAmount(total) + " ج.س";
-
-      const percent = Math.min((total / GOAL_AMOUNT) * 100, 100);
-      const percentRounded = Math.floor(percent);
-
-      progressBar.style.width = percent + "%";
-      percentLabel.textContent = percentRounded + "%";
-      percentText.textContent = "تم تحقيق " + percentRounded + "% من الهدف.";
-
-      remainingText.textContent =
-        formatAmount(Math.max(GOAL_AMOUNT - total, 0)) + " ج.س";
-
-      if (percentRounded >= 100) chipText.textContent = "تم تحقيق الهدف 🎉";
-      else if (percentRounded >= 50) chipText.textContent = "تبقّى القليل 💚";
-    });
-
-    const q = query(
-      collection(db, "donations_list"),
-      orderBy("time", "desc"),
-      limit(20)
-    );
-
-    onSnapshot(q, (snapshot) => {
-      donationsList.innerHTML = "";
-      let count = 0;
-
-      snapshot.forEach((doc) => {
-        const d = doc.data();
-        count++;
-
-        const name = d.name || "متبرّع";
-        const amount = d.amount || 0;
-        const time = d.time?.toDate()?.toLocaleString("ar-EG") || "";
-
-        donationsList.innerHTML += `
-          <li>
-            <div>
-              <div class="donor-name">${name}</div>
-              <div class="donor-meta">${time}</div>
-            </div>
-            <div class="amount-chip">${formatAmount(amount)} ج.س</div>
-          </li>`;
-      });
-
-      donationsCountEl.textContent = count;
-    });
-  </script>
+    if (count === 0) {
+      donationsList.innerHTML = `
+        <li>
+          <div>
+            <div class="donor-name">في انتظار أول تبرع 💚</div>
+            <div class="donor-meta">ستظهر هنا آخر التبرعات المسجلة</div>
+          </div>
+          <div class="amount-chip">0 ج.س</div>
+        </li>
+      `;
+    }
+  });
+</script>
   <!-- معلومات الحساب البنكية -->
 <section class="card" style="margin-top: 24px; text-align: center; border-radius: 18px; padding: 18px;">
   <h2 style="font-size: 20px; margin-bottom: 10px; color:#0f172a;">معلومات الحساب للتبرع</h2>
